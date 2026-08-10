@@ -1,0 +1,3 @@
+Move kara2.fbx into Assets/Models
+
+Copied kara2.fbx from repository root into Assets/Models/kara2.fbx so Unity Editor tools can find it.
