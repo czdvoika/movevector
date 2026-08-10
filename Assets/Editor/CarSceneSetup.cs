@@ -4,6 +4,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine.SceneManagement;
 using System.IO;
+using System.Collections.Generic;
 
 public class CarSceneSetup
 {
@@ -17,17 +18,23 @@ public class CarSceneSetup
         GameObject plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
         plane.name = "Ground";
         plane.transform.position = Vector3.zero;
-        plane.transform.localScale = new Vector3(50f, 1f, 50f); // Make it larger
+        plane.transform.localScale = new Vector3(50f, 1f, 50f);
         Renderer groundRenderer = plane.GetComponent<Renderer>();
         if (groundRenderer != null)
         {
-            groundRenderer.material.color = new Color(0.2f, 0.8f, 0.2f); // Green color
+            groundRenderer.material.color = new Color(0.2f, 0.8f, 0.2f);
         }
 
-        // Remove collider from ground (we'll add a flat one)
+        // Remove collider and replace with BoxCollider (convex, not mesh)
         Collider groundCollider = plane.GetComponent<Collider>();
         if (groundCollider != null) Object.DestroyImmediate(groundCollider);
-        plane.AddComponent<BoxCollider>(); // Simple box collider for ground
+        BoxCollider groundBox = plane.AddComponent<BoxCollider>();
+        groundBox.size = new Vector3(100f, 0.1f, 100f); // Large collision box
+        
+        // Add Rigidbody to ground (kinematic so it doesn't fall)
+        Rigidbody groundRb = plane.AddComponent<Rigidbody>();
+        groundRb.isKinematic = true;
+        groundRb.constraints = RigidbodyConstraints.FreezeAll;
 
         // Create circular track using cubes as track segments
         CreateCircularTrack();
@@ -67,32 +74,33 @@ public class CarSceneSetup
         carInstance.name = "Car";
         carInstance.transform.position = new Vector3(0f, 1f, 0f);
 
-        // Add Rigidbody if missing
+        // Add Rigidbody to car
         Rigidbody rb = carInstance.GetComponent<Rigidbody>();
         if (rb == null)
         {
             rb = carInstance.AddComponent<Rigidbody>();
-            rb.mass = 1200f;
         }
+        rb.mass = 1200f;
+        rb.drag = 0.1f;
+        rb.angularDrag = 0.3f;
         rb.centerOfMass = new Vector3(0f, -0.5f, 0f);
 
-        // Add collider
-        Collider col = carInstance.GetComponent<Collider>();
-        if (col == null)
+        // Remove all colliders from the car (we'll replace with WheelColliders on wheels)
+        Collider[] allColliders = carInstance.GetComponentsInChildren<Collider>();
+        foreach (Collider col in allColliders)
         {
-            var meshFilter = carInstance.GetComponentInChildren<MeshFilter>();
-            if (meshFilter != null && meshFilter.sharedMesh != null)
-            {
-                MeshCollider mc = carInstance.AddComponent<MeshCollider>();
-                mc.convex = true;
-            }
-            else
-            {
-                carInstance.AddComponent<BoxCollider>();
-            }
+            Object.DestroyImmediate(col);
         }
 
-        // Add CarController script if not present
+        // Add a simple body collider (BoxCollider) to the car body
+        BoxCollider bodyCollider = carInstance.AddComponent<BoxCollider>();
+        bodyCollider.size = new Vector3(1.5f, 1f, 3f);
+        bodyCollider.center = new Vector3(0f, 0f, 0f);
+
+        // Add WheelColliders to wheels
+        SetupWheelColliders(carInstance);
+
+        // Add CarController script
         if (carInstance.GetComponent<CarController>() == null)
         {
             carInstance.AddComponent<CarController>();
@@ -101,7 +109,7 @@ public class CarSceneSetup
         // Create camera
         GameObject camGO = new GameObject("Main Camera");
         Camera cam = camGO.AddComponent<Camera>();
-        camGO.tag = "MainCamera";
+        camGO.tag = "MainCamera"";
         camGO.transform.position = carInstance.transform.position + new Vector3(0f, 5f, -8f);
         var follow = camGO.AddComponent<FollowCamera>();
         follow.target = carInstance.transform;
@@ -114,23 +122,67 @@ public class CarSceneSetup
         EditorSceneManager.SaveScene(SceneManager.GetActiveScene(), scenePath);
         AssetDatabase.SaveAssets();
 
-        EditorUtility.DisplayDialog("Setup Car Scene", "Scene created with circular track at " + scenePath, "OK");
+        EditorUtility.DisplayDialog("Setup Car Scene", "Scene created with circular track and WheelColliders at " + scenePath, "OK");
+    }
+
+    private static void SetupWheelColliders(GameObject carInstance)
+    {
+        // Najdi všechny Válce (kola) v modelu
+        Transform[] allChildren = carInstance.GetComponentsInChildren<Transform>();
+        List<Transform> wheels = new List<Transform>();
+
+        foreach (Transform child in allChildren)
+        {
+            string name = child.name.ToLower();
+            // Hledáme objekty pojmenované "Válec" (případně s číslem)
+            if (name.Contains("válec") || name.Contains("valec") || name.Contains("wheel") || name.Contains("tire"))
+            {
+                wheels.Add(child);
+            }
+        }
+
+        Debug.Log($"Nalezeno {wheels.Count} kol: {string.Join(", ", wheels.ConvertAll(w => w.name))}");
+
+        // Přidej WheelCollider na každé kolo
+        foreach (Transform wheel in wheels)
+        {
+            // Odstraň staré colliders
+            Collider[] existingColliders = wheel.GetComponents<Collider>();
+            foreach (Collider col in existingColliders)
+            {
+                Object.DestroyImmediate(col);
+            }
+
+            // Přidej WheelCollider
+            WheelCollider wc = wheel.gameObject.AddComponent<WheelCollider>();
+            wc.radius = 0.5f;           // Poloměr kola
+            wc.mass = 50f;              // Hmotnost kola
+            wc.wheelDampingRate = 0.25f;
+            wc.forceAppPointDistance = 0f;
+            wc.center = Vector3.zero;
+            wc.suspensionDistance = 0.3f;
+            wc.suspensionSpring = new JointSpring { spring = 35000f, damper = 4500f, targetPosition = 0.5f };
+            wc.forwardFriction = new WheelFrictionCurve { extremumSlip = 0.4f, extremumValue = 1f, asymptoteSlip = 0.8f, asymptoteValue = 0.5f };
+            wc.sidewaysFriction = new WheelFrictionCurve { extremumSlip = 0.2f, extremumValue = 1f, asymptoteSlip = 0.5f, asymptoteValue = 0.75f };
+        }
     }
 
     private static void CreateCircularTrack()
     {
-        float radius = 20f;           // Radius of the circular track
-        int segments = 32;             // Number of segments
-        float trackWidth = 8f;         // Width of the track
-        float wallHeight = 0.5f;       // Height of the wall/barrier
+        float radius = 20f;
+        int segments = 32;
+        float trackWidth = 8f;
+        float wallHeight = 0.5f;
         float segmentAngle = 360f / segments;
 
         GameObject trackParent = new GameObject("Track");
+        Rigidbody trackRb = trackParent.AddComponent<Rigidbody>();
+        trackRb.isKinematic = true;
+        trackRb.constraints = RigidbodyConstraints.FreezeAll;
 
         for (int i = 0; i < segments; i++)
         {
             float angle = i * segmentAngle * Mathf.Deg2Rad;
-            float nextAngle = (i + 1) * segmentAngle * Mathf.Deg2Rad;
 
             // Outer wall
             Vector3 outerPos = new Vector3(Mathf.Cos(angle) * (radius + trackWidth / 2), 0.25f, Mathf.Sin(angle) * (radius + trackWidth / 2));
@@ -142,10 +194,13 @@ public class CarSceneSetup
             Renderer outerRenderer = outerWall.GetComponent<Renderer>();
             if (outerRenderer != null)
             {
-                outerRenderer.material.color = new Color(0.8f, 0.2f, 0.2f); // Red
+                outerRenderer.material.color = new Color(0.8f, 0.2f, 0.2f);
             }
             Object.DestroyImmediate(outerWall.GetComponent<Collider>());
-            outerWall.AddComponent<BoxCollider>();
+            BoxCollider outerBox = outerWall.AddComponent<BoxCollider>();
+            outerBox.isTrigger = false;
+            Rigidbody outerRb = outerWall.AddComponent<Rigidbody>();
+            outerRb.isKinematic = true;
 
             // Inner wall
             Vector3 innerPos = new Vector3(Mathf.Cos(angle) * (radius - trackWidth / 2), 0.25f, Mathf.Sin(angle) * (radius - trackWidth / 2));
@@ -157,10 +212,13 @@ public class CarSceneSetup
             Renderer innerRenderer = innerWall.GetComponent<Renderer>();
             if (innerRenderer != null)
             {
-                innerRenderer.material.color = new Color(0.8f, 0.2f, 0.2f); // Red
+                innerRenderer.material.color = new Color(0.8f, 0.2f, 0.2f);
             }
             Object.DestroyImmediate(innerWall.GetComponent<Collider>());
-            innerWall.AddComponent<BoxCollider>();
+            BoxCollider innerBox = innerWall.AddComponent<BoxCollider>();
+            innerBox.isTrigger = false;
+            Rigidbody innerRb = innerWall.AddComponent<Rigidbody>();
+            innerRb.isKinematic = true;
         }
     }
 }
