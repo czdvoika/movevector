@@ -1,11 +1,86 @@
 <!DOCTYPE html>
 <html lang="cs">
 <head>
-    <meta charset="UTF-8">
-    <title>Alíkův web</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="MoveVector – jednoduchá low-poly závodní hra ve vývoji." />
+  <title>MoveVector</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <h1>Čau, můj první web 😎</h1>
-    <p>Funguje to přes GitHub Pages.</p>
+  <header class="topbar">
+    <a class="logo" href="#">MOVE<span>VECTOR</span></a>
+    <nav>
+      <a href="#game">Hra</a>
+      <a href="#about">O hře</a>
+      <a class="nav-btn" href="#download">Ke stažení</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" id="game">
+      <div class="hero-copy">
+        <p class="eyebrow">PROTOTYP • VE VÝVOJI</p>
+        <h1>MOVE<br><span>VECTOR</span></h1>
+        <p class="lead">
+          Jednoduchá low-poly závodní hra zaměřená na rychlost,
+          ovládání a čistou zábavu.
+        </p>
+        <div class="buttons">
+          <a class="btn primary" href="#download">Stáhnout hru</a>
+          <a class="btn secondary" href="#about">Více o projektu</a>
+        </div>
+      </div>
+
+      <div class="hero-image">
+        <img src="assets/proto-car.png" alt="Koncept vozidla ze hry MoveVector" />
+      </div>
+    </section>
+
+    <section class="stats">
+      <div><strong>PC</strong><span>Platforma</span></div>
+      <div><strong>LOW POLY</strong><span>Styl</span></div>
+      <div><strong>ALPHA</strong><span>Stav projektu</span></div>
+      <div><strong>UNITY</strong><span>Engine</span></div>
+    </section>
+
+    <section class="about" id="about">
+      <div>
+        <p class="eyebrow">O HŘE</p>
+        <h2>Jednoduchý základ.<br>Prostor pro pořádnou jízdu.</h2>
+      </div>
+      <p>
+        MoveVector je malý herní projekt postavený kolem jednoduchého vozidla,
+        fyziky a tratí. Cílem je postupně z prototypu udělat svižnou arkádovou
+        hru s vlastní atmosférou.
+      </p>
+    </section>
+
+    <section class="feature-card">
+      <img src="assets/proto-car.png" alt="Technický náhled prototypu vozidla" />
+      <div>
+        <p class="eyebrow">PROTO CAR MK.I</p>
+        <h2>První hratelné vozidlo</h2>
+        <p>
+          Low-poly model připravený pro první testy ovládání, fyziky,
+          kolizí a jízdního modelu.
+        </p>
+      </div>
+    </section>
+
+    <section class="download" id="download">
+      <p class="eyebrow">DOWNLOAD</p>
+      <h2>První verze už brzy.</h2>
+      <p>
+        Až bude build připravený, stačí sem vložit odkaz na ZIP nebo release z GitHubu.
+      </p>
+      <a class="btn disabled" href="#" onclick="return false;">Zatím není ke stažení</a>
+    </section>
+  </main>
+
+  <footer>
+    <span>© 2026 MoveVector</span>
+    <span>Independent game project</span>
+  </footer>
 </body>
 </html>
