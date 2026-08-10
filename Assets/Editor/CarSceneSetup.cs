@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine.SceneManagement;
+using System.IO;
 
 public class CarSceneSetup
 {
@@ -12,27 +13,45 @@ public class CarSceneSetup
         // Create new scene
         Scene scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 
-        // Create ground
+        // Create ground (large plane)
         GameObject plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
         plane.name = "Ground";
         plane.transform.position = Vector3.zero;
+        plane.transform.localScale = new Vector3(50f, 1f, 50f); // Make it larger
+        Renderer groundRenderer = plane.GetComponent<Renderer>();
+        if (groundRenderer != null)
+        {
+            groundRenderer.material.color = new Color(0.2f, 0.8f, 0.2f); // Green color
+        }
 
-        // Try to find the model named 'kara2' anywhere in Assets
+        // Remove collider from ground (we'll add a flat one)
+        Collider groundCollider = plane.GetComponent<Collider>();
+        if (groundCollider != null) Object.DestroyImmediate(groundCollider);
+        plane.AddComponent<BoxCollider>(); // Simple box collider for ground
+
+        // Create circular track using cubes as track segments
+        CreateCircularTrack();
+
+        // Try to find the model named 'kara2'
         string[] guids = AssetDatabase.FindAssets("kara2 t:Model");
         if (guids == null || guids.Length == 0)
         {
             guids = AssetDatabase.FindAssets("kara2");
         }
 
-        if (guids == null || guids.Length == 0)
+        string modelPath = null;
+        if (guids != null && guids.Length > 0)
         {
-            EditorUtility.DisplayDialog("Setup Car Scene", "Model 'kara2' not found in Assets. Please place kara2.fbx into Assets/Models or search for it.", "OK");
+            modelPath = AssetDatabase.GUIDToAssetPath(guids[0]);
+        }
+
+        if (string.IsNullOrEmpty(modelPath))
+        {
+            EditorUtility.DisplayDialog("Setup Car Scene", "Model 'kara2' not found in Assets.", "OK");
             return;
         }
 
-        string modelPath = AssetDatabase.GUIDToAssetPath(guids[0]);
         GameObject modelPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(modelPath);
-
         if (modelPrefab == null)
         {
             EditorUtility.DisplayDialog("Setup Car Scene", "Failed to load model at " + modelPath, "OK");
@@ -46,7 +65,7 @@ public class CarSceneSetup
             carInstance = Object.Instantiate(modelPrefab);
         }
         carInstance.name = "Car";
-        carInstance.transform.position = new Vector3(0f, 0.5f, 0f);
+        carInstance.transform.position = new Vector3(0f, 1f, 0f);
 
         // Add Rigidbody if missing
         Rigidbody rb = carInstance.GetComponent<Rigidbody>();
@@ -57,7 +76,7 @@ public class CarSceneSetup
         }
         rb.centerOfMass = new Vector3(0f, -0.5f, 0f);
 
-        // Add collider: try MeshCollider (convex) otherwise BoxCollider
+        // Add collider
         Collider col = carInstance.GetComponent<Collider>();
         if (col == null)
         {
@@ -87,7 +106,7 @@ public class CarSceneSetup
         var follow = camGO.AddComponent<FollowCamera>();
         follow.target = carInstance.transform;
 
-        // Ensure Scenes folder exists
+        // Create scene folder if needed
         System.IO.Directory.CreateDirectory("Assets/Scenes");
 
         // Save scene
@@ -95,7 +114,54 @@ public class CarSceneSetup
         EditorSceneManager.SaveScene(SceneManager.GetActiveScene(), scenePath);
         AssetDatabase.SaveAssets();
 
-        EditorUtility.DisplayDialog("Setup Car Scene", "Scene created and saved to " + scenePath, "OK");
+        EditorUtility.DisplayDialog("Setup Car Scene", "Scene created with circular track at " + scenePath, "OK");
+    }
+
+    private static void CreateCircularTrack()
+    {
+        float radius = 20f;           // Radius of the circular track
+        int segments = 32;             // Number of segments
+        float trackWidth = 8f;         // Width of the track
+        float wallHeight = 0.5f;       // Height of the wall/barrier
+        float segmentAngle = 360f / segments;
+
+        GameObject trackParent = new GameObject("Track");
+
+        for (int i = 0; i < segments; i++)
+        {
+            float angle = i * segmentAngle * Mathf.Deg2Rad;
+            float nextAngle = (i + 1) * segmentAngle * Mathf.Deg2Rad;
+
+            // Outer wall
+            Vector3 outerPos = new Vector3(Mathf.Cos(angle) * (radius + trackWidth / 2), 0.25f, Mathf.Sin(angle) * (radius + trackWidth / 2));
+            GameObject outerWall = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            outerWall.name = "OuterWall_" + i;
+            outerWall.transform.parent = trackParent.transform;
+            outerWall.transform.position = outerPos;
+            outerWall.transform.localScale = new Vector3(1f, wallHeight, 2f);
+            Renderer outerRenderer = outerWall.GetComponent<Renderer>();
+            if (outerRenderer != null)
+            {
+                outerRenderer.material.color = new Color(0.8f, 0.2f, 0.2f); // Red
+            }
+            Object.DestroyImmediate(outerWall.GetComponent<Collider>());
+            outerWall.AddComponent<BoxCollider>();
+
+            // Inner wall
+            Vector3 innerPos = new Vector3(Mathf.Cos(angle) * (radius - trackWidth / 2), 0.25f, Mathf.Sin(angle) * (radius - trackWidth / 2));
+            GameObject innerWall = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            innerWall.name = "InnerWall_" + i;
+            innerWall.transform.parent = trackParent.transform;
+            innerWall.transform.position = innerPos;
+            innerWall.transform.localScale = new Vector3(1f, wallHeight, 2f);
+            Renderer innerRenderer = innerWall.GetComponent<Renderer>();
+            if (innerRenderer != null)
+            {
+                innerRenderer.material.color = new Color(0.8f, 0.2f, 0.2f); // Red
+            }
+            Object.DestroyImmediate(innerWall.GetComponent<Collider>());
+            innerWall.AddComponent<BoxCollider>();
+        }
     }
 }
 #endif

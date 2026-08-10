@@ -48,7 +48,7 @@ public class CarController : MonoBehaviour
             }
         }
 
-        // Omezíme maximální rychlost
+        // Omezujeme maximální rychlost
         if (rb.velocity.magnitude > maxSpeed)
         {
             rb.velocity = rb.velocity.normalized * maxSpeed;

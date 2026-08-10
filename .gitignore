@@ -29,9 +29,6 @@ sysinfo.txt
 *.pdb.meta
 *.mdb.meta
 
-# Unity3D Generated File On Crash Reports
-sysinfo.txt
-
 # Auto-generated VS/MD/Consulo/IDE files
 .vscode/
 *.csproj

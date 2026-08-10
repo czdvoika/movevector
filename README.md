@@ -1,28 +1,41 @@
-# Tools to auto-create a simple Unity scene using the kara2.fbx model (as Car)
+# Unity Car Scene Setup
 
-This branch adds scripts and an Editor tool that will create a playable scene using the existing Assets/Models/kara2.fbx model from this repository.
+Tools to auto-create a simple Unity scene with a drivable car and circular track.
 
-How to use
-1. Open this repository/branch in Unity (your selected Unity version: 6000.5.6f1).
-2. Wait for Unity to import assets (kara2.fbx should be visible under Assets/Models or similar).
-3. In Unity Editor, open the menu: Tools -> Setup Car Scene. This will create Assets/Scenes/Main.unity containing:
-   - a Ground plane
-   - an instantiated Car GameObject from kara2.fbx with Rigidbody and a collider
-   - a Main Camera with FollowCamera attached
-   - the Car GameObject will have the CarController component attached
-4. Press Play and control the car with W/A/S/D (or arrow keys). Hold Space to brake.
+## How to use
 
-Notes
-- The Editor script tries to find the model by name "kara2". If your model is in a different path or named differently, move/rename it to Assets/Models/kara2.fbx.
-- No textures/materials were added. The model will use its imported materials (if any) or Unity defaults.
-- The project does not include heavy binary files; kara2.fbx is under 100 MB as you indicated.
-- For a more realistic driving feel, we can add WheelColliders and tuning later.
+1. Open this repository in Unity (version 6000.5.6f1 or compatible).
+2. Wait for Unity to import assets (kara2.fbx should be in Assets/Models).
+3. In Unity Editor, open the menu: **Tools → Setup Car Scene**.
+   - This will create **Assets/Scenes/Main.unity** containing:
+     - A large green ground plane
+     - A circular track with red outer and inner walls
+     - A Car GameObject (from kara2.fbx) with Rigidbody and collider
+     - CarController component for driving
+     - Main Camera with FollowCamera script
+4. Press **Play** and control the car:
+   - **W/A/S/D** or **Arrow Keys**: Drive and steer
+   - **Space**: Brake
 
-Files added
-- Assets/Scripts/CarController.cs
-- Assets/Scripts/FollowCamera.cs
-- Assets/Editor/CarSceneSetup.cs (menu tool)
-- .gitignore
-- README.md (this file)
+## Files included
 
-If you want, I can open a Pull Request from add-unity-car-scene into main after you review these changes.
+- `Assets/Scripts/CarController.cs` — Car physics and input handling
+- `Assets/Scripts/FollowCamera.cs` — Third-person camera following the car
+- `Assets/Editor/CarSceneSetup.cs` — Editor menu tool to generate the scene
+- `Assets/Models/kara2.fbx` — Car model (imported from Blender)
+- `README.md` — This file
+- `.gitignore` — Standard Unity gitignore
+
+## Notes
+
+- **kara2.fbx** must be placed at `Assets/Models/kara2.fbx` for the tool to find it.
+- The circular track is generated procedurally and includes outer/inner walls to keep the car on the path.
+- The scene is automatically saved to `Assets/Scenes/Main.unity` after running the tool.
+- No textures are applied; the car will use imported materials or Unity defaults.
+
+## Future improvements
+
+- Add WheelColliders for more realistic physics
+- Add lap timer and speedometer UI
+- Add more track variations (figure-8, twisty paths, etc.)
+- Add audio (engine, collision sounds)
